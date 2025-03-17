@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Шаховий тренажер з перетягуванням</title>
+    <style>
+        .chessboard {
+            display: grid;
+            grid-gap: 1px;
+            background-color: black;
+            border-left: 1px solid purple;
+            border-bottom: 1px solid purple;
+            border-top: 1px solid black;
+            border-right: 1px solid black;
+        }
+        .cell {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-size: cover;
+            cursor: pointer;
+        }
+        .light {
+            background-color: #f0d9b5;
+        }
+        .dark {
+            background-color: #b58863;
+        }
+        .highlight {
+            background-color: blue;
+        }
+        .piece {
+            width: 50px;
+            height: 50px;
+            cursor: grab;
+        }
+    </style>
+</head>
+<body>
+    <h1>Шаховий тренажер</h1>
+    <label for="size">Розмір дошки (4-8): </label>
+    <input type="number" id="size" min="4" max="8" value="6">
+    <button onclick="createBoard()">Створити дошку</button>
+    <div id="chessboard"></div>
+
+    <script>
+        const chessboard = document.getElementById('chessboard');
+        let boardSize = 6;
+        let draggedPiece = null;
+        let targetCellId = null;
+
+        function createBoard() {
+            const sizeInput = document.getElementById('size').value;
+            boardSize = Math.max(4, Math.min(8, sizeInput)); // Обмеження від 4 до 8
+            chessboard.innerHTML = '';
+            chessboard.style.gridTemplateColumns = `repeat(${boardSize}, 60px)`;
+            chessboard.style.gridTemplateRows = `repeat(${boardSize}, 60px)`;
+
+            const pieces = {};
+            const randomRow = Math.floor(Math.random() * boardSize) + 1;
+            const randomCol = Math.floor(Math.random() * boardSize) + 1;
+            pieces[String.fromCharCode(96 + randomCol) + randomRow] = 'black_rook';
+
+            for (let row = boardSize; row >= 1; row--) {
+                for (let col = 1; col <= boardSize; col++) {
+                    const cell = document.createElement('div');
+                    const cellId = String.fromCharCode(96 + col) + row;
+                    cell.classList.add('cell');
+                    cell.id = cellId;
+                    cell.classList.add((row + col) % 2 === 0 ? 'light' : 'dark');
+                    cell.addEventListener('dragover', dragOver);
+                    cell.addEventListener('drop', drop);
+
+                    if (pieces[cellId]) {
+                        const piece = document.createElement('img');
+                        piece.src = `images/black_rook.png`; // Потрібно мати файл images/black_rook.png
+                        piece.classList.add('piece');
+                        piece.setAttribute('draggable', 'true');
+                        piece.addEventListener('dragstart', dragStart);
+                        cell.appendChild(piece);
+                    }
+                    chessboard.appendChild(cell);
+                }
+            }
+            setTargetCell();
+        }
+
+        function setTargetCell() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => cell.classList.remove('highlight'));
+            const emptyCells = Array.from(cells).filter(cell => !cell.children.length);
+            if (emptyCells.length > 0) {
+                const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                randomCell.classList.add('highlight');
+                targetCellId = randomCell.id;
+            }
+        }
+
+        function dragStart(event) {
+            draggedPiece = event.target;
+            setTimeout(() => {
+                draggedPiece.style.display = 'none';
+            }, 0);
+            if (!targetCellId) setTargetCell();
+        }
+
+        function dragOver(event) {
+            event.preventDefault();
+        }
+
+        function drop(event) {
+            event.preventDefault();
+            const targetCell = event.target.closest('.cell');
+            if (targetCell && draggedPiece) {
+                if (targetCell.id === targetCellId && targetCell.children.length === 0) {
+                    targetCell.appendChild(draggedPiece);
+                    draggedPiece.style.display = 'block';
+                    draggedPiece = null;
+                    targetCellId = null;
+                    setTargetCell(); // Нова ціль після успішного переміщення
+                } else {
+                    draggedPiece.style.display = 'block';
+                    draggedPiece = null;
+                }
+            }
+        }
+
+        // Створюємо дошку при завантаженні
+        createBoard();
+    </script>
+</body>
+</html>
